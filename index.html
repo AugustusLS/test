@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Modern Pacman</title>
     <style>
         body {
@@ -15,12 +15,13 @@
             background-color: #1a1a2e;
             font-family: 'Arial', sans-serif;
             color: white;
-            overflow: hidden;
+            overflow: hidden; /* Prevent scrollbars */
         }
 
         .game-container {
             position: relative;
-            width: 800px;
+            width: 95%; /* Use percentage for better scaling */
+            max-width: 800px; /* Limit max width */
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -28,58 +29,65 @@
 
         .game-header {
             width: 100%;
+            max-width: 640px; /* Match game board max width */
             display: flex;
             justify-content: space-between;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            padding: 0 10px; /* Add padding for smaller screens */
+            box-sizing: border-box; /* Include padding in width */
         }
 
         .score-container, .lives-container {
             background-color: rgba(255, 255, 255, 0.1);
-            padding: 10px 20px;
+            padding: 8px 15px;
             border-radius: 10px;
             display: flex;
             align-items: center;
+            font-size: 14px; /* Adjust font size */
         }
 
         .score-container i, .lives-container i {
-            margin-right: 10px;
+            margin-right: 8px;
             color: #ffd700;
+            font-style: normal; /* Prevent italics if using emoji */
         }
 
         #game-board {
-            width: 640px;
-            height: 640px;
+            width: 100%; /* Take full width of container */
+            max-width: 640px; /* Max width */
+            height: auto; /* Let aspect ratio define height */
+            aspect-ratio: 1 / 1; /* Maintain square shape */
             background-color: #0f3460;
             position: relative;
             border-radius: 10px;
-            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
-            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+            overflow: hidden; /* Important for positioning */
+            font-size: 0; /* Prevent inline-block spacing issues */
+        }
+
+        /* Make game elements scale with the board */
+        .wall, .dot, .power-pellet, #pacman, .ghost {
+           position: absolute;
+           box-sizing: border-box; /* Include border/padding in size */
         }
 
         .wall {
-            position: absolute;
             background-color: #16213e;
-            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.3);
         }
 
         .dot {
-            position: absolute;
-            width: 8px;
-            height: 8px;
             background-color: #e94560;
             border-radius: 50%;
-            transform: translate(-50%, -50%);
-            box-shadow: 0 0 5px #e94560;
+            transform: translate(-50%, -50%); /* Center based on top/left */
+            box-shadow: 0 0 3px #e94560;
         }
 
         .power-pellet {
-            position: absolute;
-            width: 16px;
-            height: 16px;
             background-color: #e94560;
             border-radius: 50%;
-            transform: translate(-50%, -50%);
-            box-shadow: 0 0 10px #e94560;
+            transform: translate(-50%, -50%); /* Center based on top/left */
+            box-shadow: 0 0 8px #e94560;
             animation: pulse 1.5s infinite alternate;
         }
 
@@ -89,72 +97,83 @@
         }
 
         #pacman {
-            position: absolute;
-            width: 30px;
-            height: 30px;
             background-color: #ffd700;
             border-radius: 50%;
-            transform: translate(-50%, -50%);
             z-index: 10;
-            clip-path: polygon(0 0, 100% 50%, 0 100%, 0 75%, 60% 50%, 0 25%);
-            transition: transform 0.1s linear;
+            /* Dynamic clip-path set in JS for mouth animation */
+            transition: transform 0.1s linear, left 0.05s linear, top 0.05s linear; /* Smooth movement */
         }
 
         .ghost {
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            border-radius: 15px 15px 0 0;
-            transform: translate(-50%, -50%);
+            border-radius: 50% 50% 0 0; /* Simpler ghost shape */
             z-index: 5;
+            transition: left 0.15s linear, top 0.15s linear, background-color 0.3s ease; /* Smooth movement */
         }
 
-        .ghost::after {
-            content: '';
-            position: absolute;
-            bottom: -5px;
-            left: 0;
-            width: 100%;
-            height: 10px;
-            background-color: inherit;
-            clip-path: polygon(0 0, 20% 100%, 40% 0, 60% 100%, 80% 0, 100% 100%, 100% 0);
-        }
+        /* Simplified ghost body - eyes will be separate */
+        .ghost::after { /* Bottom wavy part */
+             content: '';
+             position: absolute;
+             bottom: 0;
+             left: 0;
+             width: 100%;
+             height: 30%; /* Adjust size */
+             background: inherit; /* Match ghost color */
+             clip-path: polygon(0% 0%, 0% 100%, 25% 50%, 50% 100%, 75% 50%, 100% 100%, 100% 0%);
+         }
 
         .ghost-eyes {
             position: absolute;
-            width: 100%;
-            height: 15px;
-            top: 5px;
+            width: 60%; /* Eye container width */
+            height: 40%; /* Eye container height */
+            top: 20%; /* Position eyes */
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
             justify-content: space-around;
+            align-items: center;
         }
 
         .ghost-eye {
-            width: 10px;
-            height: 10px;
+            width: 40%; /* Eye size relative to container */
+            height: 60%; /* Eye size relative to container */
             background-color: white;
             border-radius: 50%;
             position: relative;
+            overflow: hidden; /* Hide pupil overflow */
+            border: 1px solid #555; /* Eye outline */
         }
 
-        .ghost-eye::after {
+        .ghost-pupil { /* Pupil element */
             content: '';
             position: absolute;
-            width: 5px;
-            height: 5px;
+            width: 50%;
+            height: 50%;
             background-color: blue;
             border-radius: 50%;
-            top: 2.5px;
-            left: 2.5px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); /* Center pupil */
+            transition: transform 0.1s linear; /* Move pupil */
         }
 
         .ghost.frightened {
-            background-color: #4a4a8c !important;
+            background-color: #4a4a8c !important; /* Important to override inline style */
         }
 
-        .ghost.frightened .ghost-eye::after {
-            background-color: white;
+        .ghost.frightened .ghost-pupil {
+            background-color: white; /* Pupil color change */
+            transform: translate(-50%, -50%) scale(0.8); /* Pupil shrinks slightly */
         }
+        /* Add blinking state for recovered ghosts */
+        .ghost.blinking {
+            animation: blink 0.5s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { background-color: #4a4a8c; } /* Frightened color */
+            50% { background-color: #eee; } /* Blinking color */
+        }
+
 
         .game-over-screen, .start-screen {
             position: absolute;
@@ -162,55 +181,64 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
+            background-color: rgba(0, 0, 0, 0.85);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 100;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
         .game-over-screen h2, .start-screen h2 {
-            font-size: 48px;
-            margin-bottom: 20px;
+            font-size: clamp(28px, 8vw, 48px); /* Responsive font size */
+            margin-bottom: 15px;
             color: #e94560;
             text-shadow: 0 0 10px #e94560;
         }
 
         .game-over-screen p, .start-screen p {
-            font-size: 24px;
-            margin-bottom: 30px;
+            font-size: clamp(16px, 4vw, 24px); /* Responsive font size */
+            margin-bottom: 25px;
         }
 
         .btn {
-            padding: 12px 24px;
+            padding: 10px 20px;
             background-color: #e94560;
             color: white;
             border: none;
             border-radius: 30px;
-            font-size: 18px;
+            font-size: clamp(16px, 3.5vw, 18px); /* Responsive font size */
             cursor: pointer;
             transition: all 0.3s;
             box-shadow: 0 0 15px rgba(233, 69, 96, 0.5);
+            font-weight: bold;
         }
 
-        .btn:hover {
+        .btn:hover, .btn:focus { /* Add focus style */
             transform: scale(1.05);
             box-shadow: 0 0 20px rgba(233, 69, 96, 0.8);
+            outline: none; /* Remove default focus outline */
         }
 
         .controls {
-            margin-top: 20px;
+            margin-top: 15px;
             text-align: center;
             background-color: rgba(255, 255, 255, 0.1);
-            padding: 10px 20px;
+            padding: 8px 15px;
             border-radius: 10px;
+            font-size: 13px;
+            max-width: 640px; /* Match game board max width */
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .mobile-controls {
-            display: none;
-            margin-top: 20px;
-            width: 200px;
+            display: none; /* Hide by default, show via JS or media query */
+            margin-top: 15px;
+            width: 180px;
         }
 
         .mobile-controls .btn-row {
@@ -220,42 +248,43 @@
         }
 
         .mobile-controls button {
-            width: 60px;
-            height: 60px;
+            width: 55px;
+            height: 55px;
             background-color: rgba(255, 255, 255, 0.2);
-            border: none;
+            border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 10px;
             color: white;
             font-size: 24px;
             margin: 0 5px;
             cursor: pointer;
+            display: flex; /* Center icon */
+            justify-content: center;
+            align-items: center;
+            -webkit-tap-highlight-color: transparent; /* Remove tap highlight */
+        }
+        .mobile-controls button:active { /* Style for button press */
+             background-color: rgba(255, 255, 255, 0.4);
         }
 
-        @media (max-width: 768px) {
-            .game-container {
-                width: 100%;
-            }
-
-            #game-board {
-                width: 100%;
-                height: auto;
-                aspect-ratio: 1/1;
-            }
-
-            .mobile-controls {
-                display: block;
-            }
-        }
+        /* Show mobile controls on touch devices or small screens */
+        @media (hover: none), (max-width: 768px) {
+             .mobile-controls {
+                 display: block;
+             }
+             .controls { /* Hide desktop controls text */
+                 display: none;
+             }
+         }
     </style>
 </head>
 <body>
     <div class="game-container">
         <div class="game-header">
             <div class="score-container">
-                <i>🎮</i> Score: <span id="score">0</span>
+                <i>S</i> Score: <span id="score">0</span> <!-- Changed icon for simplicity -->
             </div>
             <div class="lives-container">
-                <i>❤️</i> Lives: <span id="lives">3</span>
+                <span id="lives-display"></span> <!-- Lives display managed by JS -->
             </div>
         </div>
 
@@ -263,9 +292,15 @@
             <!-- Game elements will be added here by JavaScript -->
             <div class="start-screen">
                 <h2>Modern Pacman</h2>
-                <p>Use arrow keys to move</p>
+                <p>Arrow keys or tap controls</p>
                 <button class="btn" id="start-btn">Start Game</button>
             </div>
+             <!-- Game Over Screen Placeholder -->
+             <div class="game-over-screen" style="display: none;">
+                 <h2>Game Over</h2>
+                 <p>Your score: <span id="final-score">0</span></p>
+                 <button class="btn" id="restart-btn">Play Again</button>
+             </div>
         </div>
 
         <div class="controls">
@@ -274,660 +309,896 @@
 
         <div class="mobile-controls">
             <div class="btn-row">
-                <button id="up-btn">↑</button>
+                <!-- Added data attributes for easy JS targeting -->
+                <button id="up-btn" data-direction="up">↑</button>
             </div>
             <div class="btn-row">
-                <button id="left-btn">←</button>
-                <button id="down-btn">↓</button>
-                <button id="right-btn">→</button>
+                <button id="left-btn" data-direction="left">←</button>
+                <button id="down-btn" data-direction="down">↓</button>
+                <button id="right-btn" data-direction="right">→</button>
             </div>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Game elements
+            // --- DOM Elements ---
             const gameBoard = document.getElementById('game-board');
             const scoreElement = document.getElementById('score');
-            const livesElement = document.getElementById('lives');
+            const livesDisplay = document.getElementById('lives-display'); // Updated lives element
             const startScreen = document.querySelector('.start-screen');
             const startBtn = document.getElementById('start-btn');
-            
-            // Create game over screen
-            const gameOverScreen = document.createElement('div');
-            gameOverScreen.className = 'game-over-screen';
-            gameOverScreen.innerHTML = `
-                <h2>Game Over</h2>
-                <p>Your score: <span id="final-score">0</span></p>
-                <button class="btn" id="restart-btn">Play Again</button>
-            `;
-            gameOverScreen.style.display = 'none';
-            gameBoard.appendChild(gameOverScreen);
+            const gameOverScreen = document.querySelector('.game-over-screen');
+            const finalScoreElement = document.getElementById('final-score');
+            const restartBtn = document.getElementById('restart-btn');
+            const mobileControlBtns = document.querySelectorAll('.mobile-controls button');
 
-            // Game state
+            // --- Game Constants ---
+            const GRID_SIZE_BASE = 32; // Base size for calculations
+            const GRID_WIDTH = 20;
+            const GRID_HEIGHT = 20;
+            const PACMAN_SPEED_BASE = 2.5; // Speed relative to base grid size
+            const GHOST_SPEED_BASE = 1.8;
+            const GHOST_FRIGHTENED_SPEED_BASE = 1.2;
+            const FRIGHTENED_DURATION = 8000; // 8 seconds
+            const GHOST_BLINK_DURATION = 2000; // Start blinking 2s before frightened ends
+            const DOT_SCORE = 10;
+            const POWER_PELLET_SCORE = 50;
+            const GHOST_EAT_SCORE = 200;
+            const PACMAN_START_LIVES = 3;
+            const GHOST_COLORS = ['#FF5733', '#33FFCE', '#FF33F6', '#F6FF33']; // Brighter colors
+            const PACMAN_ICON = '🟡'; // Use emoji for lives display
+            const GHOST_START_POSITIONS_GRID = [ // Positions in grid units
+                { x: 9, y: 7 }, { x: 10, y: 7 }, { x: 9, y: 8 }, { x: 10, y: 8 }
+            ];
+            const PACMAN_START_POS_GRID = { x: 1, y: 1 };
+
+            // --- Game State Variables ---
             let score = 0;
-            let lives = 3;
+            let lives = 0;
             let gameRunning = false;
-            let pacman;
+            let pacman = { element: null, x: 0, y: 0, size: 0, speed: 0, currentDirection: null, requestedDirection: null, mouthOpen: true, mouthAngle: 45 };
             let ghosts = [];
             let dots = [];
             let powerPellets = [];
-            let walls = [];
-            let currentDirection = null;
-            let requestedDirection = null;
-            let gameLoopInterval;
-            let ghostMoveInterval;
-            let frightenedModeTimeout;
-            let frightenedMode = false;
+            let walls = []; // Store wall coordinates for collision detection
+            let gameLoopInterval = null;
+            let ghostMoveInterval = null;
+            let frightenedModeTimeout = null;
+            let blinkTimeout = null;
+            let currentGridSize = GRID_SIZE_BASE; // Dynamic grid size based on board width
+            let eatenGhostScoreMultiplier = 1;
 
-            // Grid settings
-            const gridSize = 32;
-            const gridWidth = 20;
-            const gridHeight = 20;
-            const boardSize = gridSize * gridWidth;
-
-            // Pacman settings
-            let pacmanX = gridSize * 1.5;
-            let pacmanY = gridSize * 1.5;
-            let pacmanSpeed = 2;
-
-            // Ghost settings
-            const ghostColors = ['#FF0000', '#00FFDE', '#FFB8DE', '#FFB847'];
-            const ghostStartPositions = [
-                { x: gridSize * 9.5, y: gridSize * 9.5 },
-                { x: gridSize * 10.5, y: gridSize * 9.5 },
-                { x: gridSize * 9.5, y: gridSize * 10.5 },
-                { x: gridSize * 10.5, y: gridSize * 10.5 }
-            ];
-            const ghostSpeed = 1.5;
-            let ghostFrightenedSpeed = 1;
-
-            // Maze layout (1 = wall, 0 = path, 2 = dot, 3 = power pellet)
+            // --- Maze Layout (1 = wall, 0 = path, 2 = dot, 3 = power pellet, 4 = ghost start area, 5 = tunnel) ---
             const maze = [
                 [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 3, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 1],
+                [1, 2, 1, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 1, 2, 1],
+                [1, 2, 1, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 1, 2, 1],
+                [1, 2, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2, 1],
                 [1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1],
-                [1, 2, 1, 1, 2, 1, 1, 1, 2, 1, 1, 2, 1, 1, 1, 2, 1, 1, 2, 1],
-                [1, 3, 1, 1, 2, 1, 1, 1, 2, 1, 1, 2, 1, 1, 1, 2, 1, 1, 3, 1],
+                [1, 1, 1, 2, 1, 1, 2, 1, 4, 4, 4, 4, 1, 2, 1, 1, 2, 1, 1, 1],
+                [1, 1, 1, 2, 1, 1, 2, 1, 4, 4, 4, 4, 1, 2, 1, 1, 2, 1, 1, 1],
+                [1, 2, 2, 2, 2, 2, 2, 1, 4, 4, 4, 4, 1, 2, 2, 2, 2, 2, 2, 1],
+                [5, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 5], // Tunnel row
                 [1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1],
-                [1, 2, 1, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 2, 1, 1, 2, 1],
+                [1, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 1],
+                [1, 3, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 3, 1],
+                [1, 1, 1, 2, 1, 1, 2, 1, 1, 2, 2, 1, 1, 2, 1, 1, 2, 1, 1, 1],
+                [1, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 1],
+                [1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1],
                 [1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1],
-                [1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1],
-                [0, 0, 0, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 1, 0, 0, 0],
-                [1, 1, 1, 1, 2, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 2, 1, 1, 1, 1],
-                [0, 0, 0, 0, 2, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 2, 0, 0, 0, 0],
-                [1, 1, 1, 1, 2, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 2, 1, 1, 1, 1],
-                [0, 0, 0, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 1, 0, 0, 0],
-                [1, 1, 1, 1, 2, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 2, 1, 1, 1, 1],
-                [1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1],
-                [1, 2, 1, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 2, 1, 1, 2, 1],
-                [1, 3, 2, 1, 2, 2, 2, 2, 2, 0, 0, 2, 2, 2, 2, 2, 1, 2, 3, 1],
-                [1, 1, 2, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 2, 1, 2, 1, 1],
-                [1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1],
                 [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-            ];
+             ];
+             // Adjust maze height based on array
+             const MAZE_HEIGHT = maze.length;
+             const MAZE_WIDTH = maze[0].length; // Assume all rows have same width
+
+            // --- Functions ---
+
+            // Calculate dynamic sizes based on board width
+            function updateSizes() {
+                const boardWidth = gameBoard.offsetWidth;
+                currentGridSize = boardWidth / MAZE_WIDTH;
+                pacman.size = currentGridSize * 0.8; // Pacman slightly smaller than grid
+                pacman.speed = (PACMAN_SPEED_BASE / GRID_SIZE_BASE) * currentGridSize;
+            }
+
+            // Update lives display
+            function updateLivesDisplay() {
+                livesDisplay.innerHTML = ''; // Clear existing
+                for (let i = 0; i < lives; i++) {
+                    const lifeIcon = document.createElement('span');
+                    lifeIcon.textContent = PACMAN_ICON;
+                    lifeIcon.style.marginRight = '2px'; // Spacing
+                    livesDisplay.appendChild(lifeIcon);
+                }
+            }
 
             // Initialize game
             function initGame() {
-                // Reset game state
+                console.log("Initializing game...");
                 score = 0;
-                lives = 3;
+                lives = PACMAN_START_LIVES;
                 gameRunning = true;
-                currentDirection = null;
-                requestedDirection = null;
-                frightenedMode = false;
-                
-                // Update UI
-                scoreElement.textContent = score;
-                livesElement.textContent = lives;
-                
-                // Clear previous game elements
-                gameBoard.innerHTML = '';
-                gameBoard.appendChild(startScreen);
-                gameBoard.appendChild(gameOverScreen);
-                gameOverScreen.style.display = 'none';
-                
-                // Create walls, dots, and power pellets
-                createMaze();
-                
-                // Create Pacman
-                pacman = document.createElement('div');
-                pacman.id = 'pacman';
-                pacman.style.left = `${pacmanX}px`;
-                pacman.style.top = `${pacmanY}px`;
-                gameBoard.appendChild(pacman);
-                
-                // Create ghosts
-                ghosts = [];
-                for (let i = 0; i < 4; i++) {
-                    const ghost = document.createElement('div');
-                    ghost.className = 'ghost';
-                    ghost.style.backgroundColor = ghostColors[i];
-                    ghost.style.left = `${ghostStartPositions[i].x}px`;
-                    ghost.style.top = `${ghostStartPositions[i].y}px`;
-                    
-                    // Add ghost eyes
-                    const ghostEyes = document.createElement('div');
-                    ghostEyes.className = 'ghost-eyes';
-                    
-                    const leftEye = document.createElement('div');
-                    leftEye.className = 'ghost-eye';
-                    
-                    const rightEye = document.createElement('div');
-                    rightEye.className = 'ghost-eye';
-                    
-                    ghostEyes.appendChild(leftEye);
-                    ghostEyes.appendChild(rightEye);
-                    ghost.appendChild(ghostEyes);
-                    
-                    gameBoard.appendChild(ghost);
-                    ghosts.push({
-                        element: ghost,
-                        x: ghostStartPositions[i].x,
-                        y: ghostStartPositions[i].y,
-                        direction: getRandomDirection(),
-                        frightened: false
-                    });
-                }
-                
-                // Start game loops
-                gameInterval = setInterval(gameLoop, 16); // ~60fps
-                ghostMoveInterval = setInterval(moveGhosts, 200);
-            }
+                pacman.currentDirection = null;
+                pacman.requestedDirection = null;
+                eatenGhostScoreMultiplier = 1;
 
-            // Create maze
-            function createMaze() {
+                scoreElement.textContent = score;
+                updateLivesDisplay();
+
+                gameOverScreen.style.display = 'none';
+                startScreen.style.display = 'none';
+                gameBoard.innerHTML = ''; // Clear board for fresh start
                 walls = [];
                 dots = [];
                 powerPellets = [];
-                
-                for (let y = 0; y < gridHeight; y++) {
-                    for (let x = 0; x < gridWidth; x++) {
-                        const cell = maze[y][x];
-                        const posX = x * gridSize;
-                        const posY = y * gridSize;
-                        
-                        if (cell === 1) { // Wall
+                ghosts = [];
+
+                updateSizes(); // Calculate sizes based on current board width
+
+                createMaze();
+                createPacman();
+                createGhosts();
+
+                // Clear any previous intervals/timeouts
+                clearInterval(gameLoopInterval);
+                clearInterval(ghostMoveInterval);
+                clearTimeout(frightenedModeTimeout);
+                clearTimeout(blinkTimeout);
+
+                // Start game loops
+                gameLoopInterval = setInterval(gameLoop, 16); // ~60fps for movement/rendering
+                ghostMoveInterval = setInterval(moveGhosts, 180); // Ghosts move slightly slower
+
+                console.log("Game initialized and loops started.");
+            }
+
+            // Create maze elements
+            function createMaze() {
+                const dotSize = currentGridSize * 0.2;
+                const pelletSize = currentGridSize * 0.4;
+
+                for (let y = 0; y < MAZE_HEIGHT; y++) {
+                    for (let x = 0; x < MAZE_WIDTH; x++) {
+                        const cellType = maze[y][x];
+                        const posX = x * currentGridSize;
+                        const posY = y * currentGridSize;
+
+                        if (cellType === 1) { // Wall
                             const wall = document.createElement('div');
                             wall.className = 'wall';
-                            wall.style.width = `${gridSize}px`;
-                            wall.style.height = `${gridSize}px`;
+                            wall.style.width = `${currentGridSize}px`;
+                            wall.style.height = `${currentGridSize}px`;
                             wall.style.left = `${posX}px`;
                             wall.style.top = `${posY}px`;
                             gameBoard.appendChild(wall);
-                            walls.push({
-                                x: posX,
-                                y: posY,
-                                width: gridSize,
-                                height: gridSize
-                            });
-                        } else if (cell === 2) { // Dot
-                            const dot = document.createElement('div');
-                            dot.className = 'dot';
-                            dot.style.left = `${posX + gridSize / 2}px`;
-                            dot.style.top = `${posY + gridSize / 2}px`;
-                            gameBoard.appendChild(dot);
-                            dots.push({
-                                element: dot,
-                                x: posX + gridSize / 2,
-                                y: posY + gridSize / 2,
-                                collected: false
-                            });
-                        } else if (cell === 3) { // Power pellet
-                            const powerPellet = document.createElement('div');
-                            powerPellet.className = 'power-pellet';
-                            powerPellet.style.left = `${posX + gridSize / 2}px`;
-                            powerPellet.style.top = `${posY + gridSize / 2}px`;
-                            gameBoard.appendChild(powerPellet);
-                            powerPellets.push({
-                                element: powerPellet,
-                                x: posX + gridSize / 2,
-                                y: posY + gridSize / 2,
-                                collected: false
-                            });
+                            // Store wall boundaries for collision check
+                            walls.push({ x: posX, y: posY, width: currentGridSize, height: currentGridSize });
+                        } else if (cellType === 2 || cellType === 3) { // Path with dot or pellet
+                             const centerX = posX + currentGridSize / 2;
+                             const centerY = posY + currentGridSize / 2;
+
+                             if (cellType === 2) { // Dot
+                                 const dot = document.createElement('div');
+                                 dot.className = 'dot';
+                                 dot.style.width = `${dotSize}px`;
+                                 dot.style.height = `${dotSize}px`;
+                                 dot.style.left = `${centerX}px`;
+                                 dot.style.top = `${centerY}px`;
+                                 gameBoard.appendChild(dot);
+                                 dots.push({ element: dot, x: centerX, y: centerY, size: dotSize, collected: false });
+                             } else { // Power Pellet
+                                 const pellet = document.createElement('div');
+                                 pellet.className = 'power-pellet';
+                                 pellet.style.width = `${pelletSize}px`;
+                                 pellet.style.height = `${pelletSize}px`;
+                                 pellet.style.left = `${centerX}px`;
+                                 pellet.style.top = `${centerY}px`;
+                                 gameBoard.appendChild(pellet);
+                                 powerPellets.push({ element: pellet, x: centerX, y: centerY, size: pelletSize, collected: false });
+                             }
                         }
+                        // No element needed for 0 (empty path), 4 (ghost area handled separately), 5 (tunnel handled in movement)
                     }
                 }
             }
 
-            // Game loop
-            function gameLoop() {
-                if (!gameRunning) return;
-                
-                // Move Pacman
-                movePacman();
-                
-                // Check collisions
-                checkCollisions();
-                
-                // Check win condition
-                checkWinCondition();
+            // Create Pacman element
+            function createPacman() {
+                pacman.x = PACMAN_START_POS_GRID.x * currentGridSize + currentGridSize / 2;
+                pacman.y = PACMAN_START_POS_GRID.y * currentGridSize + currentGridSize / 2;
+
+                const pacmanEl = document.createElement('div');
+                pacmanEl.id = 'pacman';
+                pacmanEl.style.width = `${pacman.size}px`;
+                pacmanEl.style.height = `${pacman.size}px`;
+                pacmanEl.style.left = `${pacman.x}px`;
+                pacmanEl.style.top = `${pacman.y}px`;
+                // Initial position needs transform for centering
+                 pacmanEl.style.transform = `translate(-50%, -50%) rotate(0deg)`;
+                gameBoard.appendChild(pacmanEl);
+                pacman.element = pacmanEl;
             }
+
+             // Create Ghost elements
+             function createGhosts() {
+                 const ghostSize = currentGridSize * 0.85; // Slightly larger than pacman
+                 const ghostSpeed = (GHOST_SPEED_BASE / GRID_SIZE_BASE) * currentGridSize;
+                 const ghostFrightenedSpeed = (GHOST_FRIGHTENED_SPEED_BASE / GRID_SIZE_BASE) * currentGridSize;
+
+                 GHOST_START_POSITIONS_GRID.forEach((startPos, i) => {
+                     const ghostX = startPos.x * currentGridSize + currentGridSize / 2;
+                     const ghostY = startPos.y * currentGridSize + currentGridSize / 2;
+
+                     const ghostEl = document.createElement('div');
+                     ghostEl.className = 'ghost';
+                     ghostEl.style.width = `${ghostSize}px`;
+                     ghostEl.style.height = `${ghostSize}px`;
+                     ghostEl.style.left = `${ghostX}px`;
+                     ghostEl.style.top = `${ghostY}px`;
+                     ghostEl.style.backgroundColor = GHOST_COLORS[i];
+                     // Needs transform for centering
+                     ghostEl.style.transform = `translate(-50%, -50%)`;
+
+                     // Add eyes structure
+                     const eyesContainer = document.createElement('div');
+                     eyesContainer.className = 'ghost-eyes';
+                     const eyeLeft = document.createElement('div');
+                     eyeLeft.className = 'ghost-eye';
+                     const pupilLeft = document.createElement('div');
+                     pupilLeft.className = 'ghost-pupil';
+                     eyeLeft.appendChild(pupilLeft);
+
+                     const eyeRight = document.createElement('div');
+                     eyeRight.className = 'ghost-eye';
+                     const pupilRight = document.createElement('div');
+                     pupilRight.className = 'ghost-pupil';
+                     eyeRight.appendChild(pupilRight);
+
+                     eyesContainer.appendChild(eyeLeft);
+                     eyesContainer.appendChild(eyeRight);
+                     ghostEl.appendChild(eyesContainer);
+
+                     gameBoard.appendChild(ghostEl);
+
+                     ghosts.push({
+                         element: ghostEl,
+                         pupils: [pupilLeft, pupilRight], // Store pupils for movement
+                         x: ghostX,
+                         y: ghostY,
+                         size: ghostSize,
+                         speed: ghostSpeed,
+                         frightenedSpeed: ghostFrightenedSpeed,
+                         currentSpeed: ghostSpeed,
+                         direction: getRandomDirection(),
+                         startX: ghostX, // Store start position for respawn
+                         startY: ghostY,
+                         frightened: false,
+                         eaten: false, // Track if eaten during current frightened mode
+                         id: i // For debugging
+                     });
+                 });
+             }
+
+            // --- Movement & Collision ---
+
+            // Check collision with walls
+            function checkWallCollision(x, y, objectSize) {
+                const radius = objectSize / 2;
+                const checkPoints = [ // Check corners and center of the moving object
+                    { cx: x, cy: y }, // Center
+                    { cx: x + radius * 0.9, cy: y }, // Right-center
+                    { cx: x - radius * 0.9, cy: y }, // Left-center
+                    { cx: x, cy: y + radius * 0.9 }, // Bottom-center
+                    { cx: x, cy: y - radius * 0.9 }  // Top-center
+                ];
+
+                for (const point of checkPoints) {
+                    // Get grid coordinates from pixel coordinates
+                    const gridX = Math.floor(point.cx / currentGridSize);
+                    const gridY = Math.floor(point.cy / currentGridSize);
+
+                    // Check maze bounds first
+                    if (gridX < 0 || gridX >= MAZE_WIDTH || gridY < 0 || gridY >= MAZE_HEIGHT) {
+                       // Allow wrapping only if it's a tunnel cell
+                       if (!(maze[gridY]?.[gridX] === 5 || maze[gridY]?.[gridX === 0 ? MAZE_WIDTH-1 : 0] === 5)) {
+                            // console.log("Out of bounds collision");
+                            return true; // Hit edge boundary unless it's a tunnel start/end
+                       }
+                    }
+                    // Check the maze array for a wall (1)
+                    else if (maze[gridY]?.[gridX] === 1) {
+                        // More precise check: is the point actually inside the wall bounds?
+                        const wallRect = {
+                             x: gridX * currentGridSize,
+                             y: gridY * currentGridSize,
+                             width: currentGridSize,
+                             height: currentGridSize
+                         };
+                         if (point.cx >= wallRect.x && point.cx < wallRect.x + wallRect.width &&
+                             point.cy >= wallRect.y && point.cy < wallRect.y + wallRect.height) {
+                            // console.log(`Wall collision detected at grid [${gridX}, ${gridY}]`);
+                            return true;
+                         }
+                    }
+                 }
+
+                 return false; // No collision detected
+            }
+
+            // Update Pacman's visual rotation and mouth animation
+            function updatePacmanVisuals() {
+                let angle = 0;
+                switch (pacman.currentDirection) {
+                    case 'up': angle = -90; break;
+                    case 'down': angle = 90; break;
+                    case 'left': angle = 180; break;
+                    case 'right': angle = 0; break;
+                    default: // Keep last angle if stopped
+                       const currentTransform = pacman.element.style.transform;
+                       const rotationMatch = currentTransform.match(/rotate\(([-]?\d+)deg\)/);
+                       if (rotationMatch) angle = parseInt(rotationMatch[1], 10);
+                }
+
+                // Mouth animation
+                pacman.mouthOpen = !pacman.mouthOpen;
+                const clipAngle = pacman.mouthOpen ? pacman.mouthAngle : 1; // Close mouth almost fully
+                 const clipPath = `polygon(50% 50%, 100% ${50 - clipAngle}%, 100% ${50 + clipAngle}%)`;
+                 // Invert the clip-path to cut out the mouth shape
+                 const invertedClipPath = `polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% ${50 + clipAngle}%, 50% 50%, 0% ${50 - clipAngle}%)`;
+
+
+                pacman.element.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+                pacman.element.style.clipPath = invertedClipPath; // Apply mouth cut
+            }
+
 
             // Move Pacman
             function movePacman() {
-                let newX = pacmanX;
-                let newY = pacmanY;
-                
-                // Try to change direction if requested
-                if (requestedDirection !== null) {
-                    let testX = pacmanX;
-                    let testY = pacmanY;
-                    
-                    switch (requestedDirection) {
-                        case 'up':
-                            testY -= pacmanSpeed;
-                            break;
-                        case 'down':
-                            testY += pacmanSpeed;
-                            break;
-                        case 'left':
-                            testX -= pacmanSpeed;
-                            break;
-                        case 'right':
-                            testX += pacmanSpeed;
-                            break;
-                    }
-                    
-                    if (!checkWallCollision(testX, testY)) {
-                        currentDirection = requestedDirection;
-                        requestedDirection = null;
-                    }
+                 let potentialX = pacman.x;
+                 let potentialY = pacman.y;
+                 let moved = false;
+
+                 // Check requested direction first
+                 if (pacman.requestedDirection) {
+                     let testX = pacman.x;
+                     let testY = pacman.y;
+                     switch (pacman.requestedDirection) {
+                         case 'up': testY -= pacman.speed; break;
+                         case 'down': testY += pacman.speed; break;
+                         case 'left': testX -= pacman.speed; break;
+                         case 'right': testX += pacman.speed; break;
+                     }
+                      // Check if the path in the requested direction is clear *enough*
+                     // A small lookahead helps turn corners smoothly
+                     let lookAhead = pacman.speed * 1.1;
+                     let lookAheadX = pacman.x, lookAheadY = pacman.y;
+                     switch (pacman.requestedDirection) {
+                         case 'up': lookAheadY -= lookAhead; break;
+                         case 'down': lookAheadY += lookAhead; break;
+                         case 'left': lookAheadX -= lookAhead; break;
+                         case 'right': lookAheadX += lookAhead; break;
+                     }
+
+                     if (!checkWallCollision(lookAheadX, lookAheadY, pacman.size)) {
+                         pacman.currentDirection = pacman.requestedDirection;
+                         pacman.requestedDirection = null; // Clear request once direction is changed
+                     }
+                 }
+
+                 // Move in the current direction
+                 if (pacman.currentDirection) {
+                     switch (pacman.currentDirection) {
+                         case 'up': potentialY -= pacman.speed; break;
+                         case 'down': potentialY += pacman.speed; break;
+                         case 'left': potentialX -= pacman.speed; break;
+                         case 'right': potentialX += pacman.speed; break;
+                     }
+
+                     // Check for wall collision *before* updating position
+                     if (!checkWallCollision(potentialX, potentialY, pacman.size)) {
+                         pacman.x = potentialX;
+                         pacman.y = potentialY;
+                         moved = true;
+                     } else {
+                        // If collided, stop moving in that direction
+                        // pacman.currentDirection = null; // Optionally stop completely on collision
+                     }
+                 }
+
+                // Handle Tunnel Wrapping
+                 const boardWidth = gameBoard.offsetWidth;
+                 const boardHeight = gameBoard.offsetHeight; // In case height changes
+                 if (pacman.x < 0) pacman.x = boardWidth - (pacman.size / 2);
+                 if (pacman.x > boardWidth) pacman.x = (pacman.size / 2);
+                 if (pacman.y < 0) pacman.y = boardHeight - (pacman.size / 2);
+                 if (pacman.y > boardHeight) pacman.y = (pacman.size / 2);
+
+
+                // Update element position visually
+                pacman.element.style.left = `${pacman.x}px`;
+                pacman.element.style.top = `${pacman.y}px`;
+
+                // Update rotation and mouth animation only if moving or direction changed
+                if (moved || pacman.requestedDirection) {
+                   updatePacmanVisuals();
                 }
-                
-                // Move in current direction
-                if (currentDirection !== null) {
-                    switch (currentDirection) {
-                        case 'up':
-                            newY -= pacmanSpeed;
-                            pacman.style.transform = 'translate(-50%, -50%) rotate(270deg)';
-                            break;
-                        case 'down':
-                            newY += pacmanSpeed;
-                            pacman.style.transform = 'translate(-50%, -50%) rotate(90deg)';
-                            break;
-                        case 'left':
-                            newX -= pacmanSpeed;
-                            pacman.style.transform = 'translate(-50%, -50%) rotate(180deg)';
-                            break;
-                        case 'right':
-                            newX += pacmanSpeed;
-                            pacman.style.transform = 'translate(-50%, -50%) rotate(0deg)';
-                            break;
-                    }
-                    
-                    // Check wall collision before moving
-                    if (!checkWallCollision(newX, newY)) {
-                        pacmanX = newX;
-                        pacmanY = newY;
-                    }
-                }
-                
-                // Wrap around the screen
-                if (pacmanX < 0) pacmanX = boardSize;
-                if (pacmanX > boardSize) pacmanX = 0;
-                if (pacmanY < 0) pacmanY = boardSize;
-                if (pacmanY > boardSize) pacmanY = 0;
-                
-                // Update Pacman position
-                pacman.style.left = `${pacmanX}px`;
-                pacman.style.top = `${pacmanY}px`;
             }
 
-            // Move ghosts
-            function moveGhosts() {
-                if (!gameRunning) return;
-                
-                ghosts.forEach((ghost, index) => {
-                    // Determine ghost speed
-                    const speed = ghost.frightened ? ghostFrightenedSpeed : ghostSpeed;
-                    
-                    // Get possible directions
-                    const possibleDirections = [];
-                    const directions = [
-                        { dx: 0, dy: -speed, name: 'up' },
-                        { dx: 0, dy: speed, name: 'down' },
-                        { dx: -speed, dy: 0, name: 'left' },
-                        { dx: speed, dy: 0, name: 'right' }
-                    ];
-                    
-                    // Check each direction
-                    directions.forEach(dir => {
-                        const newX = ghost.x + dir.dx;
-                        const newY = ghost.y + dir.dy;
-                        
-                        if (!checkWallCollision(newX, newY)) {
-                            possibleDirections.push(dir);
-                        }
-                    });
-                    
-                    // If no possible directions, try to find a way out
-                    if (possibleDirections.length === 0) {
-                        const oppositeDir = {
-                            up: { dx: 0, dy: speed, name: 'down' },
-                            down: { dx: 0, dy: -speed, name: 'up' },
-                            left: { dx: speed, dy: 0, name: 'right' },
-                            right: { dx: -speed, dy: 0, name: 'left' }
-                        };
-                        
-                        const testX = ghost.x + oppositeDir[ghost.direction.name].dx;
-                        const testY = ghost.y + oppositeDir[ghost.direction.name].dy;
-                        
-                        if (!checkWallCollision(testX, testY)) {
-                            ghost.direction = oppositeDir[ghost.direction.name];
-                        }
-                    } else {
-                        // Choose a direction (simple AI)
-                        let chosenDirection;
-                        
-                        if (ghost.frightened) {
-                            // When frightened, move randomly
-                            chosenDirection = possibleDirections[Math.floor(Math.random() * possibleDirections.length)];
-                        } else {
-                            // Normal mode: try to chase Pacman with some randomness
-                            if (Math.random() < 0.7) {
-                                // Calculate direction to Pacman
-                                const dx = pacmanX - ghost.x;
-                                const dy = pacmanY - ghost.y;
-                                
-                                // Choose direction based on Pacman's position
-                                if (Math.abs(dx) > Math.abs(dy)) {
-                                    // Try horizontal first
-                                    const horizontalDir = dx > 0 ? 'right' : 'left';
-                                    const horizontalIndex = possibleDirections.findIndex(dir => dir.name === horizontalDir);
-                                    
-                                    if (horizontalIndex >= 0) {
-                                        chosenDirection = possibleDirections[horizontalIndex];
-                                    } else {
-                                        // Try vertical
-                                        const verticalDir = dy > 0 ? 'down' : 'up';
-                                        const verticalIndex = possibleDirections.findIndex(dir => dir.name === verticalDir);
-                                        
-                                        if (verticalIndex >= 0) {
-                                            chosenDirection = possibleDirections[verticalIndex];
-                                        } else {
-                                            chosenDirection = possibleDirections[0];
-                                        }
-                                    }
-                                } else {
-                                    // Try vertical first
-                                    const verticalDir = dy > 0 ? 'down' : 'up';
-                                    const verticalIndex = possibleDirections.findIndex(dir => dir.name === verticalDir);
-                                    
-                                    if (verticalIndex >= 0) {
-                                        chosenDirection = possibleDirections[verticalIndex];
-                                    } else {
-                                        // Try horizontal
-                                        const horizontalDir = dx > 0 ? 'right' : 'left';
-                                        const horizontalIndex = possibleDirections.findIndex(dir => dir.name === horizontalDir);
-                                        
-                                        if (horizontalIndex >= 0) {
-                                            chosenDirection = possibleDirections[horizontalIndex];
-                                        } else {
-                                            chosenDirection = possibleDirections[0];
-                                        }
-                                    }
-                                }
-                            } else {
-                                // Add some randomness
-                                chosenDirection = possibleDirections[Math.floor(Math.random() * possibleDirections.length)];
+            // Update ghost pupil direction
+            function updateGhostPupils(ghost, dirX, dirY) {
+                 // Simple pupil movement based on ghost direction
+                 let pupilOffsetX = 0;
+                 let pupilOffsetY = 0;
+                 const maxOffset = 20; // Max percentage offset
+
+                 if (dirX > 0) pupilOffsetX = maxOffset; // Right
+                 else if (dirX < 0) pupilOffsetX = -maxOffset; // Left
+
+                 if (dirY > 0) pupilOffsetY = maxOffset; // Down
+                 else if (dirY < 0) pupilOffsetY = -maxOffset; // Up
+
+                 ghost.pupils.forEach(pupil => {
+                      pupil.style.transform = `translate(calc(-50% + ${pupilOffsetX}% ), calc(-50% + ${pupilOffsetY}%))`;
+                 });
+             }
+
+             // Move Ghosts
+             function moveGhosts() {
+                 if (!gameRunning) return;
+
+                 ghosts.forEach(ghost => {
+                     // Skip movement if eaten and waiting to respawn (optional, could teleport)
+                     if (ghost.eaten) return;
+
+                     ghost.currentSpeed = ghost.frightened ? ghost.frightenedSpeed : ghost.speed;
+                     let potentialX = ghost.x;
+                     let potentialY = ghost.y;
+
+                     // --- Simple Ghost AI ---
+                     // Decide next direction at intersections or dead ends
+                     const currentGridX = Math.floor(ghost.x / currentGridSize);
+                     const currentGridY = Math.floor(ghost.y / currentGridSize);
+                     const isAtIntersection = true; // For simplicity, re-evaluate often
+
+                     if (isAtIntersection) {
+                         const possibleDirections = [];
+                         const allDirections = [
+                             { name: 'up', dx: 0, dy: -ghost.currentSpeed },
+                             { name: 'down', dx: 0, dy: ghost.currentSpeed },
+                             { name: 'left', dx: -ghost.currentSpeed, dy: 0 },
+                             { name: 'right', dx: ghost.currentSpeed, dy: 0 }
+                         ];
+                         // Determine the opposite direction to avoid immediate reversal unless necessary
+                         const oppositeDirection = { up: 'down', down: 'up', left: 'right', right: 'left' };
+                         const cantGo = oppositeDirection[ghost.direction?.name];
+
+                         allDirections.forEach(dir => {
+                            // Check slightly ahead in the potential direction
+                            const testX = ghost.x + dir.dx * 1.5;
+                            const testY = ghost.y + dir.dy * 1.5;
+                            if (!checkWallCollision(testX, testY, ghost.size)) {
+                                // Add if it's not the opposite direction (unless it's the only option)
+                                 possibleDirections.push(dir);
                             }
+                         });
+
+                        let validMoves = possibleDirections.filter(dir => dir.name !== cantGo);
+                        if(validMoves.length === 0 && possibleDirections.length > 0) {
+                            // Only option is backwards
+                            validMoves = possibleDirections;
                         }
-                        
-                        ghost.direction = chosenDirection;
-                    }
-                    
-                    // Move ghost
-                    ghost.x += ghost.direction.dx;
-                    ghost.y += ghost.direction.dy;
-                    
-                    // Wrap around the screen
-                    if (ghost.x < 0) ghost.x = boardSize;
-                    if (ghost.x > boardSize) ghost.x = 0;
-                    if (ghost.y < 0) ghost.y = boardSize;
-                    if (ghost.y > boardSize) ghost.y = 0;
-                    
-                    // Update ghost position
-                    ghost.element.style.left = `${ghost.x}px`;
-                    ghost.element.style.top = `${ghost.y}px`;
-                });
-            }
 
-            // Check wall collision
-            function checkWallCollision(x, y) {
-                const pacmanRadius = 15; // Half of Pacman's size
-                
-                for (const wall of walls) {
-                    // Simple collision detection
-                    if (x + pacmanRadius > wall.x && 
-                        x - pacmanRadius < wall.x + wall.width && 
-                        y + pacmanRadius > wall.y && 
-                        y - pacmanRadius < wall.y + wall.height) {
-                        return true;
-                    }
-                }
-                
-                return false;
-            }
 
-            // Check collisions
+                         if (validMoves.length > 0) {
+                             let chosenDirection;
+                             if (ghost.frightened) {
+                                 // Frightened: Move randomly
+                                 chosenDirection = validMoves[Math.floor(Math.random() * validMoves.length)];
+                             } else {
+                                 // Normal: Basic chase logic (move towards Pacman)
+                                 let bestDirection = validMoves[0];
+                                 let minDistance = Infinity;
+
+                                 validMoves.forEach(dir => {
+                                     const nextX = ghost.x + dir.dx;
+                                     const nextY = ghost.y + dir.dy;
+                                     const distance = Math.hypot(pacman.x - nextX, pacman.y - nextY);
+                                     if (distance < minDistance) {
+                                         minDistance = distance;
+                                         bestDirection = dir;
+                                     }
+                                 });
+                                 chosenDirection = bestDirection;
+                             }
+                             ghost.direction = chosenDirection;
+                         } else if (possibleDirections.length > 0) {
+                             // If only backwards is possible
+                              ghost.direction = possibleDirections[0];
+                         } else {
+                              // Stuck? Should ideally not happen with proper wall checks
+                              // console.warn(`Ghost ${ghost.id} is potentially stuck!`);
+                              // Try reversing
+                              const reverseDir = allDirections.find(d => d.name === cantGo);
+                              if(reverseDir && !checkWallCollision(ghost.x + reverseDir.dx, ghost.y + reverseDir.dy, ghost.size)) {
+                                  ghost.direction = reverseDir;
+                              } else {
+                                  ghost.direction = null; // Stop if truly stuck
+                              }
+                         }
+                     }
+
+
+                     // Move in the chosen direction
+                     if (ghost.direction) {
+                        potentialX += ghost.direction.dx;
+                        potentialY += ghost.direction.dy;
+
+                         // Final check before moving
+                         if (!checkWallCollision(potentialX, potentialY, ghost.size)) {
+                             ghost.x = potentialX;
+                             ghost.y = potentialY;
+                             updateGhostPupils(ghost, ghost.direction.dx, ghost.direction.dy); // Move eyes
+                         } else {
+                             // Hit a wall even after checks, might happen due to pixel rounding/speed. Stop? Or try random?
+                             // console.log(`Ghost ${ghost.id} hit wall unexpectedly.`);
+                              ghost.direction = null; // Stop for now
+                         }
+
+                     }
+
+                     // Handle Tunnel Wrapping for Ghosts
+                     const boardWidth = gameBoard.offsetWidth;
+                     const boardHeight = gameBoard.offsetHeight;
+                      if (ghost.x < 0) ghost.x = boardWidth - (ghost.size / 2);
+                      if (ghost.x > boardWidth) ghost.x = (ghost.size / 2);
+                      if (ghost.y < 0) ghost.y = boardHeight - (ghost.size / 2);
+                      if (ghost.y > boardHeight) ghost.y = (ghost.size / 2);
+
+                     // Update element position
+                     ghost.element.style.left = `${ghost.x}px`;
+                     ghost.element.style.top = `${ghost.y}px`;
+                 });
+             }
+
+
+            // --- Collision & Game State ---
+
+            // Check all collisions
             function checkCollisions() {
-                // Check dot collisions
-                dots.forEach(dot => {
+                const pacmanRadius = pacman.size / 2;
+
+                // Pacman vs Dots
+                dots = dots.filter(dot => {
                     if (!dot.collected) {
-                        const distance = Math.sqrt(
-                            Math.pow(pacmanX - dot.x, 2) + 
-                            Math.pow(pacmanY - dot.y, 2)
-                        );
-                        
-                        if (distance < 15) {
+                        const distance = Math.hypot(pacman.x - dot.x, pacman.y - dot.y);
+                        if (distance < pacmanRadius + dot.size / 2) {
                             dot.collected = true;
                             dot.element.style.display = 'none';
-                            score += 10;
+                            score += DOT_SCORE;
                             scoreElement.textContent = score;
+                            return false; // Remove from active dots array
                         }
                     }
+                    return true; // Keep in array
                 });
-                
-                // Check power pellet collisions
-                powerPellets.forEach(pellet => {
+
+                // Pacman vs Power Pellets
+                powerPellets = powerPellets.filter(pellet => {
                     if (!pellet.collected) {
-                        const distance = Math.sqrt(
-                            Math.pow(pacmanX - pellet.x, 2) + 
-                            Math.pow(pacmanY - pellet.y, 2)
-                        );
-                        
-                        if (distance < 15) {
+                        const distance = Math.hypot(pacman.x - pellet.x, pacman.y - pellet.y);
+                        if (distance < pacmanRadius + pellet.size / 2) {
                             pellet.collected = true;
                             pellet.element.style.display = 'none';
-                            score += 50;
+                            score += POWER_PELLET_SCORE;
                             scoreElement.textContent = score;
-                            
-                            // Activate frightened mode
                             activateFrightenedMode();
+                            return false; // Remove from active pellets array
                         }
                     }
+                    return true; // Keep in array
                 });
-                
-                // Check ghost collisions
+
+                // Pacman vs Ghosts
                 ghosts.forEach(ghost => {
-                    const distance = Math.sqrt(
-                        Math.pow(pacmanX - ghost.x, 2) + 
-                        Math.pow(pacmanY - ghost.y, 2)
-                    );
-                    
-                    if (distance < 25) {
+                    if (ghost.eaten) return; // Ignore eaten ghosts
+
+                    const distance = Math.hypot(pacman.x - ghost.x, pacman.y - ghost.y);
+                    if (distance < pacmanRadius + ghost.size / 2.5) { // Slightly smaller hit box for ghosts
                         if (ghost.frightened) {
                             // Eat ghost
-                            score += 200;
+                            ghost.eaten = true; // Mark as eaten
+                            const currentGhostScore = GHOST_EAT_SCORE * eatenGhostScoreMultiplier;
+                            score += currentGhostScore;
                             scoreElement.textContent = score;
-                            
-                            // Reset ghost position
-                            const index = ghosts.indexOf(ghost);
-                            ghost.x = ghostStartPositions[index].x;
-                            ghost.y = ghostStartPositions[index].y;
-                            ghost.element.style.left = `${ghost.x}px`;
-                            ghost.element.style.top = `${ghost.y}px`;
-                            
-                            // Turn off frightened mode
-                            deactivateFrightenedMode();
+                            eatenGhostScoreMultiplier *= 2; // Double score for next ghost in same frightened mode
+
+                            // --- Display score briefly at ghost location (Optional visual flair) ---
+                            const scorePopup = document.createElement('div');
+                            scorePopup.textContent = currentGhostScore;
+                            scorePopup.style.position = 'absolute';
+                            scorePopup.style.left = `${ghost.x}px`;
+                            scorePopup.style.top = `${ghost.y}px`;
+                            scorePopup.style.transform = 'translate(-50%, -100%)'; // Position above ghost
+                            scorePopup.style.color = '#fff';
+                            scorePopup.style.fontSize = `${currentGridSize * 0.5}px`;
+                            scorePopup.style.fontWeight = 'bold';
+                            scorePopup.style.zIndex = '20';
+                            scorePopup.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+                            gameBoard.appendChild(scorePopup);
+                             setTimeout(() => {
+                                scorePopup.style.opacity = '0';
+                                scorePopup.style.transform = 'translate(-50%, -150%)'; // Move up and fade
+                                setTimeout(() => scorePopup.remove(), 500);
+                            }, 100);
+                            // --- End score popup ---
+
+
+                            ghost.element.style.opacity = '0.5'; // Visually indicate eaten
+                            // Teleport ghost back to start after a short delay
+                            setTimeout(() => {
+                                if(!gameRunning) return; // Don't reset if game ended
+                                ghost.x = ghost.startX;
+                                ghost.y = ghost.startY;
+                                ghost.eaten = false; // Ready to come out again
+                                ghost.frightened = false; // No longer frightened when respawning
+                                ghost.element.classList.remove('frightened', 'blinking');
+                                ghost.element.style.opacity = '1';
+                                ghost.direction = getRandomDirection(); // Start moving again
+                            }, 500); // Delay before respawn
+
+
                         } else {
-                            // Lose a life
-                            lives--;
-                            livesElement.textContent = lives;
-                            
-                            if (lives <= 0) {
-                                gameOver();
-                            } else {
-                                resetPositions();
-                            }
+                            // Collided with normal ghost - Lose a life
+                            handleLifeLost();
                         }
                     }
                 });
             }
 
-            // Activate frightened mode
-            function activateFrightenedMode() {
-                frightenedMode = true;
-                
-                // Turn all ghosts frightened
-                ghosts.forEach(ghost => {
-                    ghost.frightened = true;
-                    ghost.element.classList.add('frightened');
-                });
-                
-                // Clear existing timeout if any
-                if (frightenedModeTimeout) {
-                    clearTimeout(frightenedModeTimeout);
-                }
-                
-                // Set timeout to deactivate frightened mode
-                frightenedModeTimeout = setTimeout(() => {
-                    deactivateFrightenedMode();
-                }, 10000); // 10 seconds
+             // Handle losing a life
+             function handleLifeLost() {
+                 console.log("Life lost!");
+                 lives--;
+                 updateLivesDisplay();
+                 gameRunning = false; // Pause game briefly
+
+                 // Clear frightened mode immediately
+                 deactivateFrightenedMode(true); // Pass true to force immediate stop
+
+                 // Visual indication (e.g., flash Pacman?) - Optional
+
+                 if (lives <= 0) {
+                     gameOver();
+                 } else {
+                     // Short delay before resetting positions
+                     setTimeout(() => {
+                         resetPositionsAfterLifeLost();
+                         gameRunning = true; // Resume game
+                     }, 1500); // 1.5 second pause
+                 }
+             }
+
+             // Reset positions after losing a life (not game over)
+             function resetPositionsAfterLifeLost() {
+                 // Reset Pacman
+                 pacman.x = PACMAN_START_POS_GRID.x * currentGridSize + currentGridSize / 2;
+                 pacman.y = PACMAN_START_POS_GRID.y * currentGridSize + currentGridSize / 2;
+                 pacman.element.style.left = `${pacman.x}px`;
+                 pacman.element.style.top = `${pacman.y}px`;
+                 pacman.currentDirection = null;
+                 pacman.requestedDirection = null;
+                 updatePacmanVisuals(); // Reset visuals
+
+                 // Reset Ghosts to starting positions and states
+                 ghosts.forEach(ghost => {
+                     ghost.x = ghost.startX;
+                     ghost.y = ghost.startY;
+                     ghost.element.style.left = `${ghost.x}px`;
+                     ghost.element.style.top = `${ghost.y}px`;
+                     ghost.frightened = false;
+                     ghost.eaten = false;
+                     ghost.element.classList.remove('frightened', 'blinking');
+                     ghost.element.style.opacity = '1';
+                     ghost.direction = getRandomDirection();
+                     updateGhostPupils(ghost, 0, 0); // Reset pupils
+                 });
+             }
+
+
+             // Activate frightened mode
+             function activateFrightenedMode() {
+                 console.log("Frightened Mode Activated!");
+                 eatenGhostScoreMultiplier = 1; // Reset score multiplier
+
+                 // Clear existing timeouts
+                 clearTimeout(frightenedModeTimeout);
+                 clearTimeout(blinkTimeout);
+
+                 ghosts.forEach(ghost => {
+                     // Only affect ghosts that haven't just been eaten and are respawning
+                     if (!ghost.eaten) {
+                         ghost.frightened = true;
+                         ghost.element.classList.add('frightened');
+                         ghost.element.classList.remove('blinking'); // Ensure not blinking initially
+                         // Optionally reverse direction when mode activates
+                         const oppositeDirection = { up: 'down', down: 'up', left: 'right', right: 'left' };
+                         const reverseDirName = oppositeDirection[ghost.direction?.name];
+                          const allDirections = [ { name: 'up', dx: 0, dy: -1 }, { name: 'down', dx: 0, dy: 1 }, { name: 'left', dx: -1, dy: 0 }, { name: 'right', dx: 1, dy: 0 }];
+                         const reverseDir = allDirections.find(d=>d.name === reverseDirName);
+                         if(reverseDir) {
+                              const testX = ghost.x + reverseDir.dx * ghost.currentSpeed;
+                              const testY = ghost.y + reverseDir.dy * ghost.currentSpeed;
+                              if(!checkWallCollision(testX, testY, ghost.size)){
+                                 ghost.direction = { ...reverseDir, dx: reverseDir.dx * ghost.frightenedSpeed, dy: reverseDir.dy * ghost.frightenedSpeed }; // Apply new speed
+                              }
+                         }
+                     }
+                 });
+
+                 // Set timeout to end frightened mode
+                 frightenedModeTimeout = setTimeout(() => {
+                     deactivateFrightenedMode();
+                 }, FRIGHTENED_DURATION);
+
+                 // Set timeout to start blinking near the end
+                  blinkTimeout = setTimeout(() => {
+                      ghosts.forEach(ghost => {
+                          if (ghost.frightened && !ghost.eaten) {
+                              ghost.element.classList.add('blinking');
+                          }
+                      });
+                  }, FRIGHTENED_DURATION - GHOST_BLINK_DURATION);
+             }
+
+              // Deactivate frightened mode
+              function deactivateFrightenedMode(force = false) {
+                   if (!force && !ghosts.some(g => g.frightened)) return; // Don't run if not active unless forced
+
+                   console.log("Frightened Mode Deactivated.");
+                   clearTimeout(frightenedModeTimeout);
+                   clearTimeout(blinkTimeout);
+
+                   ghosts.forEach(ghost => {
+                       if (ghost.frightened) { // Only affect currently frightened ghosts
+                           ghost.frightened = false;
+                           ghost.element.classList.remove('frightened', 'blinking');
+                       }
+                   });
+               }
+
+             // Check win condition
+             function checkWinCondition() {
+                 // Win if all dots are collected
+                 if (dots.length === 0) {
+                     console.log("Level Cleared!");
+                     score += lives * 200; // Bonus for remaining lives
+                     scoreElement.textContent = score;
+                     gameOverScreen.querySelector('h2').textContent = 'You Win!';
+                     finalScoreElement.textContent = score;
+                     gameOverScreen.style.display = 'flex';
+                     stopGame();
+                 }
+             }
+
+             // Game over
+             function gameOver() {
+                 console.log("Game Over!");
+                 gameOverScreen.querySelector('h2').textContent = 'Game Over';
+                 finalScoreElement.textContent = score;
+                 gameOverScreen.style.display = 'flex';
+                 stopGame();
+             }
+
+             // Stop game loops and clear timeouts
+              function stopGame() {
+                  gameRunning = false;
+                  clearInterval(gameLoopInterval);
+                  clearInterval(ghostMoveInterval);
+                  clearTimeout(frightenedModeTimeout);
+                  clearTimeout(blinkTimeout);
+                  console.log("Game loops stopped.");
+              }
+
+             // Get random valid direction
+             function getRandomDirection() {
+                 const directions = [
+                     { name: 'up', dx: 0, dy: -1 },
+                     { name: 'down', dx: 0, dy: 1 },
+                     { name: 'left', dx: -1, dy: 0 },
+                     { name: 'right', dx: 1, dy: 0 }
+                 ];
+                 // Basic speed applied later
+                 return directions[Math.floor(Math.random() * directions.length)];
+             }
+
+            // --- Game Loop ---
+            function gameLoop() {
+                if (!gameRunning) return;
+
+                movePacman();
+                // Ghost movement handled in separate interval (moveGhosts)
+                checkCollisions();
+                checkWinCondition(); // Check if all dots are eaten
             }
 
-            // Deactivate frightened mode
-            function deactivateFrightenedMode() {
-                frightenedMode = false;
-                
-                // Turn all ghosts normal
-                ghosts.forEach(ghost => {
-                    ghost.frightened = false;
-                    ghost.element.classList.remove('frightened');
-                });
-            }
+            // --- Event Listeners ---
 
-            // Reset positions after losing a life
-            function resetPositions() {
-                // Reset Pacman
-                pacmanX = gridSize * 1.5;
-                pacmanY = gridSize * 1.5;
-                pacman.style.left = `${pacmanX}px`;
-                pacman.style.top = `${pacmanY}px`;
-                
-                // Reset ghosts
-                ghosts.forEach((ghost, index) => {
-                    ghost.x = ghostStartPositions[index].x;
-                    ghost.y = ghostStartPositions[index].y;
-                    ghost.direction = getRandomDirection();
-                    ghost.element.style.left = `${ghost.x}px`;
-                    ghost.element.style.top = `${ghost.y}px`;
-                });
-                
-                // Reset directions
-                currentDirection = null;
-                requestedDirection = null;
-            }
-
-            // Check win condition
-            function checkWinCondition() {
-                const remainingDots = dots.filter(dot => !dot.collected).length;
-                const remainingPowerPellets = powerPellets.filter(pellet => !pellet.collected).length;
-                
-                if (remainingDots === 0 && remainingPowerPellets === 0) {
-                    // Player won
-                    score += lives * 100; // Bonus for remaining lives
-                    scoreElement.textContent = score;
-                    gameOverScreen.querySelector('h2').textContent = 'You Win!';
-                    gameOverScreen.querySelector('#final-score').textContent = score;
-                    gameOverScreen.style.display = 'flex';
-                    gameRunning = false;
-                    clearInterval(gameLoopInterval);
-                    clearInterval(ghostMoveInterval);
-                }
-            }
-
-            // Game over
-            function gameOver() {
-                gameOverScreen.querySelector('h2').textContent = 'Game Over';
-                gameOverScreen.querySelector('#final-score').textContent = score;
-                gameOverScreen.style.display = 'flex';
-                gameRunning = false;
-                clearInterval(gameLoopInterval);
-                clearInterval(ghostMoveInterval);
-            }
-
-            // Get random direction
-            function getRandomDirection() {
-                const directions = [
-                    { dx: 0, dy: -ghostSpeed, name: 'up' },
-                    { dx: 0, dy: ghostSpeed, name: 'down' },
-                    { dx: -ghostSpeed, dy: 0, name: 'left' },
-                    { dx: ghostSpeed, dy: 0, name: 'right' }
-                ];
-                
-                return directions[Math.floor(Math.random() * directions.length)];
-            }
-
-            // Event listeners
+            // Keyboard controls
             document.addEventListener('keydown', (e) => {
                 if (!gameRunning) return;
-                
+                let requested = null;
                 switch (e.key) {
-                    case 'ArrowUp':
-                        requestedDirection = 'up';
-                        break;
-                    case 'ArrowDown':
-                        requestedDirection = 'down';
-                        break;
-                    case 'ArrowLeft':
-                        requestedDirection = 'left';
-                        break;
-                    case 'ArrowRight':
-                        requestedDirection = 'right';
-                        break;
+                    case 'ArrowUp': case 'w': case 'W': requested = 'up'; break;
+                    case 'ArrowDown': case 's': case 'S': requested = 'down'; break;
+                    case 'ArrowLeft': case 'a': case 'A': requested = 'left'; break;
+                    case 'ArrowRight': case 'd': case 'D': requested = 'right'; break;
+                    default: return; // Exit if not an arrow key or WASD
                 }
+                 e.preventDefault(); // Prevent page scrolling with arrow keys
+                pacman.requestedDirection = requested;
             });
 
-            // Mobile controls
-            upBtn.addEventListener('click', () => {
-                if (gameRunning) requestedDirection = 'up';
-            });
-            
-            downBtn.addEventListener('click', () => {
-                if (gameRunning) requestedDirection = 'down';
-            });
-            
-            leftBtn.addEventListener('click', () => {
-                if (gameRunning) requestedDirection = 'left';
-            });
-            
-            rightBtn.addEventListener('click', () => {
-                if (gameRunning) requestedDirection = 'right';
-            });
+            // Mobile button controls
+             mobileControlBtns.forEach(button => {
+                 button.addEventListener('click', (e) => {
+                     if (!gameRunning) return;
+                     const direction = e.target.dataset.direction;
+                     if (direction) {
+                         pacman.requestedDirection = direction;
+                     }
+                 });
+                  // Add touchstart for faster response on mobile, prevent default to avoid double actions
+                 button.addEventListener('touchstart', (e) => {
+                      e.preventDefault(); // Prevent click event firing after touch
+                      if (!gameRunning) return;
+                      const direction = e.target.dataset.direction;
+                      if (direction) {
+                          pacman.requestedDirection = direction;
+                      }
+                 }, { passive: false }); // Need passive false to preventDefault
+             });
+
 
             // Start button
             startBtn.addEventListener('click', () => {
-                startScreen.style.display = 'none';
                 initGame();
             });
 
             // Restart button
-            document.getElementById('restart-btn').addEventListener('click', () => {
-                gameOverScreen.style.display = 'none';
+            restartBtn.addEventListener('click', () => {
                 initGame();
             });
-        });
+
+             // Resize handler to recalculate sizes (debounced)
+             let resizeTimeout;
+             window.addEventListener('resize', () => {
+                 clearTimeout(resizeTimeout);
+                 resizeTimeout = setTimeout(() => {
+                     if(gameRunning) {
+                          console.log("Resizing board - might require restart for perfect sync");
+                           // For simplicity, could force a restart or just update sizes.
+                           // Updating sizes live can be complex to get right with element positions.
+                           // Let's just update sizes for now, might cause visual glitches until restart.
+                           // updateSizes();
+                           // A better approach might be to pause and prompt for restart on resize.
+                           // Or design elements to scale purely with CSS if possible.
+                           // For now: just log it. A full restart via initGame() would be safer.
+                     } else {
+                         // If game hasn't started, safe to just update potential sizes
+                         updateSizes();
+                     }
+                 }, 250); // Debounce resize events
+             });
+
+             // Initial setup: Show start screen, calculate initial sizes
+             updateSizes();
+             startScreen.style.display = 'flex'; // Ensure start screen is visible initially
+             gameOverScreen.style.display = 'none'; // Ensure game over is hidden
+
+        }); // End DOMContentLoaded
     </script>
 </body>
 </html>
